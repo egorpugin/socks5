@@ -1,20 +1,27 @@
 CC := gcc
+CXX := g++
 
 CFLAGS := -g -Wall -O3 -DLINUX
-CXXFLAGS := $(CFLAGS)
+CXXFLAGS := $(CFLAGS) -std=c++1z
 
 LDFLAGS := -Wl,-rpath,bin,-rpath, -lm -L./ \
 	-Isrc/libev -lev 	\
 	-Isrc/udns -ludns	\
 	-Isrc/logger -llogger	\
-	-Isrc/buffer -lbuffer
+	-Isrc/buffer -lbuffer \
+	-lstdc++
 
 vpath %.c src
+vpath %.cpp src
 
 SOURCES := main.c netutils.c callback.c socks5.c resolve.c optparser.c help.c
+SOURCES_CXX := auth.cpp
 
-ssserver: $(SOURCES) libev.a libudns.a liblogger.a libbuffer.a
+ssserver: $(SOURCES) auth.o libev.a libudns.a liblogger.a libbuffer.a
 	$(CC) $^ $(CFLAGS) $(LDFLAGS) -g -o $@
+
+auth.o: $(SOURCES_CXX)
+	$(CXX) $^ $(CXXFLAGS) $(LDFLAGS) -c -o auth.o
 
 libev.a:
 	cd src/libev && ./configure && make

@@ -287,10 +287,14 @@ void client_recv_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
                 SOCKS5_AUTH_USERNAMEPASSWORD_STATUS_FAIL
             };
 
-            if (server->ulen == req.ulen &&
+            /*if (server->ulen == req.ulen &&
                 server->plen == req.plen &&
                 0 == memcmp(&server->username, &req.username, req.ulen) &&
                 0 == memcmp(&server->password, &req.password, req.ulen)) {
+                res.status = SOCKS5_AUTH_USERNAMEPASSWORD_STATUS_OK;
+            }*/
+
+            if (auth_check(&req)) {
                 res.status = SOCKS5_AUTH_USERNAMEPASSWORD_STATUS_OK;
             }
 

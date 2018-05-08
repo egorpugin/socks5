@@ -6,17 +6,20 @@
 #include "logger.h"
 
 extern struct socks5_server g_server;
+extern char g_auth_db[4096];
 
 int socks5_server_parse(int argc, char **argv) {
 
 #define OPTION_USERNAME_IDX 1
 #define OPTION_PASSWORD_IDX 2
 #define OPTION_LOGLEVEL_IDX 3
+#define OPTION_AUTH_DB_IDX  4
 
     int option_index = 0;
     struct option long_options[] = {
         { "username",    required_argument,  &option_index,  OPTION_USERNAME_IDX },
         { "password",    required_argument,  &option_index,  OPTION_PASSWORD_IDX },
+        { "auth-db",     required_argument,  &option_index,  OPTION_AUTH_DB_IDX },
         { "port",        required_argument,  NULL,           'p'                 },
         { "daemon",      required_argument,  NULL,           'd'                 },
         { "loglevel",    required_argument,  &option_index,  OPTION_LOGLEVEL_IDX },
@@ -85,6 +88,11 @@ int socks5_server_parse(int argc, char **argv) {
                             g_server.log_level = LOGGER_LEVEL_FATAL;
                         }
                         logger_debug("log level: [%s]\n", optarg);
+                        break;
+                    }
+                    case OPTION_AUTH_DB_IDX: {
+                        g_server.auth_method = SOCKS5_AUTH_USERNAMEPASSWORD;
+                        stpcpy(g_auth_db, optarg);
                         break;
                     }
                     default:
