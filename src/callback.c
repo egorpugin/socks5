@@ -296,6 +296,9 @@ void client_recv_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
 
             if (auth_check(&req)) {
                 res.status = SOCKS5_AUTH_USERNAMEPASSWORD_STATUS_OK;
+                logger_info("user connected: %s\n", req.username);
+            } else {
+                logger_warn("auth failed for user: %s\n", req.username);
             }
 
             if (SOCKS5_AUTH_USERNAMEPASSWORD_STATUS_FAIL == res.status) {
