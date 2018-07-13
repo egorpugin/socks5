@@ -95,6 +95,7 @@ struct socks5_client_conn {
     struct ev_io *ww;   // write watcher
     buffer_t *input;
     buffer_t *output;
+    struct user *u;
 };
 
 struct socks5_remote_conn {

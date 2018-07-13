@@ -54,3 +54,6 @@ dkms.conf
 debug
 ssserver
 !deps/udns-0.4/configure.lib
+
+sync.sh
+

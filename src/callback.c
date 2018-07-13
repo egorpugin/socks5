@@ -294,7 +294,7 @@ void client_recv_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
                 res.status = SOCKS5_AUTH_USERNAMEPASSWORD_STATUS_OK;
             }*/
 
-            if (auth_check(&req)) {
+            if (auth_check(&req, client)) {
                 res.status = SOCKS5_AUTH_USERNAMEPASSWORD_STATUS_OK;
                 logger_info("user connected: %s\n", req.username);
             } else {
@@ -588,7 +588,10 @@ void remote_recv_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
         }
     }
 
-    buffer_concat(client->output, remote->input->data, buffer_len(remote->input));
+    // put into client_send_cb()?
+    size_t len = buffer_len(remote->input);
+    add_traffic(client, len);
+    buffer_concat(client->output, remote->input->data, len);
     buffer_reset(remote->input);
     ev_io_start(loop, client->ww);
 
