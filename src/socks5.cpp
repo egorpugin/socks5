@@ -21,17 +21,20 @@ struct socket_pump {
     int n_closed{};
 
     void run(auto &ctx, uint64_t &tx, uint64_t &rx) {
-        auto stop_f = [&](auto eptr) {
-            s1.close();
-            s2.close();
-            if (++n_closed == 2) {
-                delete this;
-            }
+        auto stop_f = [&](auto &s) {
+            return [&](auto eptr) {
+                if (!eptr) {
+                    return;
+                }
+                s.close();
+                if (++n_closed == 2) {
+                    delete this;
+                }
+            };
         };
-        boost::asio::co_spawn(ctx, run(s1, s2, tx), stop_f);
-        boost::asio::co_spawn(ctx, run(s2, s1, rx), stop_f);
+        boost::asio::co_spawn(ctx, run(s1, s2, tx), stop_f(s1));
+        boost::asio::co_spawn(ctx, run(s2, s1, rx), stop_f(s2));
     }
-
     task<> run(auto &s_from, auto &s_to, uint64_t &bytes) {
         uint8_t buffer[100*1024];
         while (1) {
@@ -131,8 +134,7 @@ private:
             co_return;
         }
         co_await boost::asio::async_read(s, boost::asio::buffer(&c, sizeof(c)), boost::asio::use_awaitable);
-        constexpr auto auth_types_max = std::numeric_limits<uint8_t>::max();
-        if (c == 0 || c > auth_types_max) {
+        if (c == 0) {
             auto ver = socks_version;
             auto auth = auth_type::no_acceptable_auth;
             buffers.clear();
@@ -141,6 +143,7 @@ private:
             co_await s.async_send(buffers, boost::asio::use_awaitable);
             co_return;
         }
+        constexpr auto auth_types_max = std::numeric_limits<uint8_t>::max();
         auth_type atypes[auth_types_max];
         auth_type atype = auth_type::no_acceptable_auth;
         co_await boost::asio::async_read(s, boost::asio::buffer(atypes, c), boost::asio::use_awaitable);
@@ -200,6 +203,7 @@ private:
                 co_await s.async_send(buffers, boost::asio::use_awaitable);
             }
             if (!auth_ok) {
+                std::cerr << std::format("bad auth\n");
                 co_return;
             }
         }
@@ -229,6 +233,7 @@ private:
             break;
         }
         default:
+            std::cerr << std::format("bad atype\n");
             co_return;
         }
         co_await boost::asio::async_read(s, boost::asio::buffer(&r.port, sizeof(r.port)), boost::asio::use_awaitable);
@@ -245,6 +250,7 @@ private:
             ip::tcp::resolver res{ex};
             auto resp = co_await res.async_resolve(*p, std::to_string(std::byteswap(r.port)), boost::asio::use_awaitable);
             if (resp.empty()) {
+                std::cerr << std::format("cannot resolve {}\n", *p);
                 co_return;
             }
             for (auto &&re1 : resp) {
@@ -264,6 +270,7 @@ private:
             }
         }
         if (auto p = std::get_if<request::ipv6>(&r.dst_address)) {
+            std::cerr << std::format("cannot connect to ipv6\n");
             co_return; // not impl
         }
 
@@ -290,6 +297,7 @@ private:
         co_await s.async_send(buffers, boost::asio::use_awaitable);
 
         if (err) {
+            std::cerr << std::format("cannot connect to dest\n");
             co_return;
         }
 
